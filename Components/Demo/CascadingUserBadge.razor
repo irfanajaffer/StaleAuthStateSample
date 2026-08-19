@@ -1,0 +1,21 @@
+<div class="badge-card badge-live">
+    <strong>Cascading parameter (live)</strong>
+    <p>User: <code>@_displayName</code></p>
+    <p>Roles: <code>@_roles</code></p>
+</div>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationStateTask { get; set; } = null!;
+
+    private string _displayName = "(not read yet)";
+    private string _roles = "(none)";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var user = (await AuthenticationStateTask).User;
+        _displayName = user.Identity?.IsAuthenticated == true ? user.Identity.Name! : "(anonymous)";
+        var roles = user.FindAll(System.Security.Claims.ClaimTypes.Role).Select(claim => claim.Value);
+        _roles = string.Join(", ", roles) is { Length: > 0 } roleList ? roleList : "(none)";
+    }
+}

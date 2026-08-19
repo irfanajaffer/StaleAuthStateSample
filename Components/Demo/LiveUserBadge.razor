@@ -1,0 +1,44 @@
+@* FIXED PATTERN: subscribes to AuthenticationStateChanged and re-renders whenever it fires. *@
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@implements IDisposable
+
+<div class="badge-card badge-live">
+    <strong>LiveUserBadge (fixed)</strong>
+    <p>User: <code>@_displayName</code></p>
+    <p>Roles: <code>@_roles</code></p>
+</div>
+
+@code {
+    private string _displayName = "(not read yet)";
+    private string _roles = "(none)";
+
+    protected override async Task OnInitializedAsync()
+    {
+        AuthenticationStateProvider.AuthenticationStateChanged += OnAuthenticationStateChanged;
+        await ApplyStateAsync(await AuthenticationStateProvider.GetAuthenticationStateAsync());
+    }
+
+    private void OnAuthenticationStateChanged(Task<AuthenticationState> newStateTask)
+    {
+        _ = InvokeAsync(async () =>
+        {
+            await ApplyStateAsync(await newStateTask);
+            StateHasChanged();
+        });
+    }
+
+    private Task ApplyStateAsync(AuthenticationState state)
+    {
+        _displayName = state.User.Identity?.IsAuthenticated == true
+            ? state.User.Identity.Name!
+            : "(anonymous)";
+        var roles = state.User.FindAll(System.Security.Claims.ClaimTypes.Role).Select(claim => claim.Value);
+        _roles = string.Join(", ", roles) is { Length: > 0 } roleList ? roleList : "(none)";
+        return Task.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        AuthenticationStateProvider.AuthenticationStateChanged -= OnAuthenticationStateChanged;
+    }
+}

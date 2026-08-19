@@ -1,0 +1,29 @@
+@* BUGGY PATTERN: reads the authentication state exactly once and caches it.
+   It never subscribes to AuthenticationStateProvider.AuthenticationStateChanged,
+   so it has no way of knowing the user changed later in the same circuit. *@
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<div class="badge-card badge-stale">
+    <strong>StaleUserBadge (buggy)</strong>
+    <p>User: <code>@_displayName</code></p>
+    <p>Roles: <code>@_roles</code></p>
+</div>
+
+@code {
+    private string _displayName = "(not read yet)";
+    private string _roles = "(none)";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        _displayName = state.User.Identity?.IsAuthenticated == true
+            ? state.User.Identity.Name!
+            : "(anonymous)";
+        var roles = state.User.FindAll(System.Security.Claims.ClaimTypes.Role).Select(claim => claim.Value);
+        _roles = string.Join(", ", roles) is { Length: > 0 } roleList ? roleList : "(none)";
+
+        // No subscription to AuthenticationStateChanged, and no [CascadingParameter]
+        // Task<AuthenticationState>. Whatever we captured above is what stays on screen,
+        // even after SignIn()/SignOut() are called elsewhere in the same circuit.
+    }
+}

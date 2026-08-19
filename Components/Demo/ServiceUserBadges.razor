@@ -1,0 +1,56 @@
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject CachedUserService CachedUserService
+@inject LiveCachedUserService LiveCachedUserService
+@implements IDisposable
+
+<div class="badge-card badge-stale">
+    <strong>CachedUserService (buggy)</strong>
+    <p>User: <code>@_staleName</code></p>
+    <p>Roles: <code>@_staleRoles</code></p>
+</div>
+
+<div class="badge-card badge-live">
+    <strong>LiveCachedUserService (fixed)</strong>
+    <p>User: <code>@_liveName</code></p>
+    <p>Roles: <code>@_liveRoles</code></p>
+</div>
+
+@code {
+    private string _staleName = "(not read yet)";
+    private string _staleRoles = "(none)";
+    private string _liveName = "(not read yet)";
+    private string _liveRoles = "(none)";
+
+    protected override async Task OnInitializedAsync()
+    {
+        AuthenticationStateProvider.AuthenticationStateChanged += OnAuthenticationStateChanged;
+        await ReadServicesAsync();
+    }
+
+    private void OnAuthenticationStateChanged(Task<AuthenticationState> authenticationStateTask)
+    {
+        _ = InvokeAsync(async () =>
+        {
+            await ReadServicesAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async Task ReadServicesAsync()
+    {
+        (_staleName, _staleRoles) = Describe(await CachedUserService.GetUserAsync());
+        (_liveName, _liveRoles) = Describe(await LiveCachedUserService.GetUserAsync());
+    }
+
+    private static (string Name, string Roles) Describe(System.Security.Claims.ClaimsPrincipal user)
+    {
+        var name = user.Identity?.IsAuthenticated == true ? user.Identity.Name! : "(anonymous)";
+        var roles = user.FindAll(System.Security.Claims.ClaimTypes.Role).Select(claim => claim.Value);
+        return (name, string.Join(", ", roles) is { Length: > 0 } roleList ? roleList : "(none)");
+    }
+
+    public void Dispose()
+    {
+        AuthenticationStateProvider.AuthenticationStateChanged -= OnAuthenticationStateChanged;
+    }
+}

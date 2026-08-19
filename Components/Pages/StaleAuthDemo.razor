@@ -1,0 +1,53 @@
+@page "/stale-auth-demo"
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@rendermode InteractiveServer
+
+<PageTitle>Stale Authentication State Demo</PageTitle>
+
+<h1>Stale authentication state demo</h1>
+
+<p>
+    Change the user without reloading. Alice has the Administrator role and Bob has the Support role.
+</p>
+
+<div class="demo-controls">
+    <button class="btn btn-primary" @onclick='() => AuthProvider.SignIn("alice")'>Sign in as alice</button>
+    <button class="btn btn-primary" @onclick='() => AuthProvider.SignIn("bob")'>Sign in as bob</button>
+    <button class="btn btn-secondary" @onclick="() => AuthProvider.SignOut()">Sign out</button>
+</div>
+
+<CascadingAuthenticationState>
+    <div class="demo-badges">
+        <StaleUserBadge />
+        <LiveUserBadge />
+        <CascadingUserBadge />
+    </div>
+
+    <h2>Scoped service consumers</h2>
+    <div class="demo-badges">
+        <ServiceUserBadges />
+    </div>
+
+    <h2>Framework consumer</h2>
+    <div class="badge-card badge-live">
+        <strong>AuthorizeView (live)</strong>
+        <AuthorizeView>
+            <Authorized Context="authenticationState">
+                <p>User: <code>@authenticationState.User.Identity?.Name</code></p>
+                <p>Administrator: <code>@authenticationState.User.IsInRole("Administrator")</code></p>
+                <p>Support: <code>@authenticationState.User.IsInRole("Support")</code></p>
+            </Authorized>
+            <NotAuthorized>
+                <p>User: <code>(anonymous)</code></p>
+                <p>Roles: <code>(none)</code></p>
+            </NotAuthorized>
+        </AuthorizeView>
+    </div>
+</CascadingAuthenticationState>
+
+<h2>Navigation check</h2>
+<p>Sign in, navigate to <a href="counter">Counter</a>, change user after returning, then repeat the navigation.</p>
+
+@code {
+    private DemoAuthenticationStateProvider AuthProvider => (DemoAuthenticationStateProvider)AuthenticationStateProvider;
+}
