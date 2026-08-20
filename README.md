@@ -7,8 +7,7 @@ Manual: [dotnet/aspnetcore #68479](https://github.com/dotnet/aspnetcore/issues/6
 ## Build tested
 
 ```text
-.NET SDK
-11.0.100-preview.7.26381.103
+.NET SDK 11.0.100-preview.7.26381.103
 ```
 
 The scenario requires .NET 11 Preview 7 or later.
